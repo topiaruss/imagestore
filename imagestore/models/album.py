@@ -3,9 +3,11 @@
 
 __author__ = 'zeus'
 
-from bases.album import BaseAlbum
+from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from imagestore.utils import get_model_string
+
+from bases.album import BaseAlbum
+
 
 class Album(BaseAlbum):
 
@@ -15,4 +17,4 @@ class Album(BaseAlbum):
         verbose_name_plural = _('Albums')
         app_label = 'imagestore'
 
-    head = models.ForeignKey(get_model_string('Image'), related_name='head_of', null=True, blank=True, on_delete=models.SET_NULL)
+    head = models.ForeignKey('imagesift.Image', related_name='head_of', null=True, blank=True, on_delete=models.SET_NULL)
