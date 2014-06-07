@@ -26,10 +26,11 @@ class ImageAdmin(admin.ModelAdmin):
     fieldsets = (
         (None,
          {'fields': ['title', 'image',
-                     'photographers_name','event_name', 'photo_date', 'tags', 'album', 'description',]}
+                     'photographers_name','event_name', 'photo_date', 'tags', 'album', 'description',
+                     'exif',]}
         ),
     )
-    list_display = ('admin_thumbnail', 'album', 'title', 'photo_date', 'tags', 'photographers_name', 'event_name')
+    list_display = ('admin_thumbnail', 'album', 'title', 'raw_exif_datetime', 'photo_date', 'tags', 'photographers_name', 'event_name')
     raw_id_fields = ('user', )
     list_filter = ('album', 'photographers_name', 'event_name')
 

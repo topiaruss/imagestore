@@ -3,21 +3,23 @@
 
 __author__ = 'zeus'
 
+import datetime
+import logging
 
 from django.db import models
 from django.db.models import permalink
-from sorl.thumbnail.helpers import ThumbnailError
-from tagging_autocomplete.models import TagAutocompleteField
-#from tagging.fields import TagField
-from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
-from sorl.thumbnail import ImageField, get_thumbnail
+from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import Permission
 from django.db.models.signals import post_save
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 
-import logging
+from sorl.thumbnail.helpers import ThumbnailError
+from tagging_autocomplete.models import TagAutocompleteField
+from django_pgjson.fields import JsonField
+from sorl.thumbnail import ImageField, get_thumbnail
+
 
 logger = logging.getLogger(__name__)
 
@@ -72,36 +74,60 @@ class BaseImage(models.Model):
         blank=True,
         verbose_name=_("Event name"),
         )
-    photo_date = models.DateField(
+    photo_date = models.DateTimeField(
         blank=True,
         null=True,
         verbose_name=_("Date override"),
         help_text=_("This will override the image's EXIF date")
         )
+    exif = JsonField(null=True, blank=True)
 
     @permalink
     def get_absolute_url(self):
         return 'imagestore:image', (), {'pk': self.id}
 
-    def get_date(selfself):
-        #TODO - if photo_date null, put EXIF date (once we have it)
-        return self.photo_date
+
+    def overrideable_date(self):
+        """
+        Get the exif date, but override if the photo_date is set
+        """
+        if self.photo_date:
+            return self.photo_data
+        return self.raw_exif_datetime()
+    overrideable_date.short_description = _('Raw Exif Datetime')
 
     def __unicode__(self):
         return '%s'% self.id
+
+    def raw_exif_datetime(self):
+        try:
+            exifdate = self.exif['Image DateTime']
+            dt = datetime.datetime.strptime(exifdate, '%Y:%m:%d %H:%M:%S')
+            return dt
+        except Exception, ex:
+            logger.exception("raw_exif_datetime")
+            return None
+    raw_exif_datetime.short_description = _('Raw Exif Datetime')
 
     def admin_thumbnail(self):
         try:
             return '<img src="%s">' % get_thumbnail(self.image, '100x100', crop='center').url
         except IOError:
             logger.exception('IOError for image %s', self.image)
-            return 'IOError'
+            return 'IOError logged'
         except ThumbnailError, ex:
             return 'ThumbnailError, %s' % ex.message
 
     admin_thumbnail.short_description = _('Thumbnail')
     admin_thumbnail.allow_tags = True
 
+    # def exifbyblock(self, block):
+    #     import pdb; pdb.set_trace()
+    #     block = [i for i in self.exif.items() if i[0].startswith(block)]
+    #     ret = {}
+    #     for k,v in block:
+    #         ret[k] = v
+    #     return ret
 
 #noinspection PyUnusedLocal
 def setup_imagestore_permissions(instance, created, **kwargs):

@@ -5,6 +5,7 @@ from django.utils.importlib import import_module
 
 __author__ = 'zeus'
 
+import exifread
 import os
 import zipfile
 from django.db import models
@@ -51,6 +52,14 @@ def process_zipfile(uploaded_album):
                     # if a "bad" file is found we just skip it.
                     print('Error verify image: %s' % ex.message)
                     continue
+
+                if hasattr(data, 'seek') and callable(data.seek):
+                    print 'seeked'
+                    data.seek(0)
+                exif = exifread.process_file(StringIO(data))
+                xif = {}
+                [xif.update({k:v.printable}) for k, v in exif.items()]
+
                 if hasattr(data, 'seek') and callable(data.seek):
                     print 'seeked'
                     data.seek(0)
@@ -61,10 +70,13 @@ def process_zipfile(uploaded_album):
                                 photographers_name=uploaded_album.photographers_name,
                                 photo_date=uploaded_album.photo_date,
                                 description=uploaded_album.image_description,
+                                exif=xif,
                                 )
                     img.image.save(filename, ContentFile(data))
                     img.save()
+                    print img.raw_exif_datetime()
                 except Exception, ex:
+                    #import pdb;pdb.set_trace()
                     print('error create Image: %s' % ex.message)
         zip.close()
         uploaded_album.delete()
