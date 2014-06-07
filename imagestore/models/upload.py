@@ -11,6 +11,8 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 from django.core.files.base import ContentFile
+from tagging_autocomplete.models import TagAutocompleteField
+
 try:
     import Image as PILImage
 except ImportError:
@@ -53,7 +55,13 @@ def process_zipfile(uploaded_album):
                     print 'seeked'
                     data.seek(0)
                 try:
-                    img = Image(album=uploaded_album.album)
+                    img = Image(album=uploaded_album.album,
+                                tags=uploaded_album._tags_cache,
+                                event_name=uploaded_album.event_name,
+                                photographers_name=uploaded_album.photographers_name,
+                                photo_date=uploaded_album.photo_date,
+                                description=uploaded_album.image_description,
+                                )
                     img.image.save(filename, ContentFile(data))
                     img.save()
                 except Exception, ex:
@@ -93,9 +101,35 @@ class AlbumUpload(models.Model):
         max_length=255,
         blank=True,
         verbose_name=_('New album name'),
-        help_text=_('If not empty new album with this name will be created and images will be upload to this album')
+        help_text=_('If not empty, a new album with this name will be created and images will be upload to this album')
         )
-    tags = models.CharField(max_length=255, blank=True, verbose_name=_('tags'))
+    photographers_name = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name=_("Photographer's name"),
+        help_text=_('Will be added to each uploaded image')
+        )
+    event_name = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name=_("Event name"),
+        help_text=_('Will be added to each uploaded image')
+        )
+    image_description = models.TextField(
+        max_length=100,
+        blank=True,
+        verbose_name=_("Image description"),
+        help_text=_('Will be added to each uploaded image')
+        )
+    photo_date = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name=_("Date override"),
+        help_text=_('This will override the internal EXIF date of each uploaded image')
+        )
+    tags = TagAutocompleteField(
+        help_text=_('Comma separated. These will be added to each uploaded image')
+        )
 
     class Meta(object):
         verbose_name = _('Album upload')

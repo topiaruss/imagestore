@@ -19,4 +19,3 @@ album_classname = Album.__name__.lower()
 from upload import AlbumUpload
 
 __all__ = [Album, Image, AlbumUpload]
-print __all__

@@ -7,7 +7,8 @@ __author__ = 'zeus'
 from django.db import models
 from django.db.models import permalink
 from sorl.thumbnail.helpers import ThumbnailError
-from tagging.fields import TagField
+from tagging_autocomplete.models import TagAutocompleteField
+#from tagging.fields import TagField
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 from sorl.thumbnail import ImageField, get_thumbnail
@@ -46,8 +47,13 @@ class BaseImage(models.Model):
         )
 
     title = models.CharField(_('Title'), max_length=100, blank=True, null=True)
-    description = models.TextField(_('Description'), blank=True, null=True)
-    tags = TagField(_('Tags'), blank=True)
+    description = models.TextField(
+        max_length=100,
+        blank=True,
+        verbose_name=_("Image description"),
+        )
+    tags = TagAutocompleteField()
+
     order = models.IntegerField(_('Order'), default=0)
     image = ImageField(verbose_name = _('File'), upload_to=get_file_path)
     user = models.ForeignKey(User, verbose_name=_('User'), null=True, blank=True, related_name='images')
@@ -55,9 +61,31 @@ class BaseImage(models.Model):
     updated = models.DateTimeField(_('Updated'), auto_now=True, null=True)
     album = models.ForeignKey(get_model_string('Album'), verbose_name=_('Album'), null=True, blank=True, related_name='images')
 
+    photographers_name = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name=_("Photographer's name"),
+        )
+    event_name = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name=_("Event name"),
+        )
+    photo_date = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name=_("Date override"),
+        help_text=_("This will override the image's EXIF date")
+        )
+
     @permalink
     def get_absolute_url(self):
         return 'imagestore:image', (), {'pk': self.id}
+
+    def get_date(selfself):
+        #TODO - if photo_date null, put EXIF date (once we have it)
+        return self.photo_date
 
     def __unicode__(self):
         return '%s'% self.id
