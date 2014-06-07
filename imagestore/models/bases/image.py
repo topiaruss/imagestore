@@ -15,6 +15,7 @@ from django.contrib.auth.models import Permission
 from django.db.models.signals import post_save
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -52,6 +53,7 @@ class BaseImage(models.Model):
     user = models.ForeignKey(User, verbose_name=_('User'), null=True, blank=True, related_name='images')
     created = models.DateTimeField(_('Created'), auto_now_add=True, null=True)
     updated = models.DateTimeField(_('Updated'), auto_now=True, null=True)
+    album = models.ForeignKey(get_model_string('Album'), verbose_name=_('Album'), null=True, blank=True, related_name='images')
 
     @permalink
     def get_absolute_url(self):

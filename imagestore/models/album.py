@@ -17,4 +17,3 @@ class Album(BaseAlbum):
         verbose_name_plural = _('Albums')
         app_label = 'imagestore'
 
-    head = models.ForeignKey('imagesift.Image', related_name='head_of', null=True, blank=True, on_delete=models.SET_NULL)
