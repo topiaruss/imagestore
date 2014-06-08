@@ -91,12 +91,43 @@ class BaseImage(models.Model):
 
     def overrideable_date(self):
         """
-        Get the exif date, but override if the photo_date is set
+        Return the override date, or the exif date, or the created date
         """
         if self.photo_date:
             return self.photo_date
-        return self.raw_exif_datetime()
+        exif_date = self.raw_exif_datetime()
+        if exif_date is not None:
+            return exif_date
+        # perhaps we should get the original image file date?
+        return self.created
     overrideable_date.short_description = _('Raw Exif Datetime')
+
+    def overrideable_photographer(self):
+        """
+        Guessing the best behaviour here.
+        If photographer defined, return it.
+        Else, if EXIF artist defined, return it.
+        Else, if Copyright defined, return it.
+        Else, return empty.
+        """
+        if self.photographers_name:
+            return self.photographers_name
+
+        try:
+            artist = self.exif_by_block()['Image']['Artist']
+            if artist:
+                return artist
+        except KeyError:
+            pass
+
+        try:
+            copyright = self.exif_by_block()['Image']['Copyright']
+            if copyright:
+                return copyright
+        except KeyError:
+            pass
+
+        return ''
 
     def raw_exif_datetime(self):
         """
@@ -139,56 +170,56 @@ class BaseImage(models.Model):
         Below is an example of the ret value, for a specific image::
 
         {
-        u'EXIF': {   u'ApertureValue': u'53/8',
-                 u'ColorSpace': u'sRGB',
-                 u'ComponentsConfiguration': u'YCbCr',
-                 u'CustomRendered': u'Normal',
-                 u'DateTimeDigitized': u'2009:09:12 14:42:56',
-                 u'DateTimeOriginal': u'2009:09:12 14:42:56',
-                 u'ExifImageLength': u'320',
-                 u'ExifImageWidth': u'213',
-                 u'ExifVersion': u'0221',
-                 u'ExposureBiasValue': u'0',
-                 u'ExposureMode': u'Auto Exposure',
-                 u'ExposureProgram': u'Program Normal',
-                 u'ExposureTime': u'1/500',
-                 u'FNumber': u'10',
-                 u'Flash': u'Flash did not fire, compulsory flash mode',
-                 u'FlashPixVersion': u'0100',
-                 u'FocalLength': u'38',
-                 u'FocalPlaneResolutionUnit': u'2',
-                 u'FocalPlaneXResolution': u'207302/39',
-                 u'FocalPlaneYResolution': u'245747/46',
-                 u'ISOSpeedRatings': u'800',
-                 u'MaxApertureValue': u'3363/1189',
-                 u'MeteringMode': u'Spot',
-                 u'SceneCaptureType': u'Standard',
-                 u'ShutterSpeedValue': u'9',
-                 u'SubSecTime': u'11',
-                 u'SubSecTimeDigitized': u'11',
-                 u'SubSecTimeOriginal': u'11',
-                 u'UserComment': u' ',
-                 u'WhiteBalance': u'Auto'},
-        u'GPS': {   u'GPSDate': u'2009:09:12',
-                    u'GPSLatitude': u'[35, 16, 4887/100]',
-                    u'GPSLatitudeRef': u'N',
-                    u'GPSLongitude': u'[120, 39, 2661/50]',
-                    u'GPSLongitudeRef': u'W',
-                    u'GPSTimeStamp': u'[21, 42, 56]',
-                    u'GPSVersionID': u'[2, 2, 0, 0]'},
-        u'Image': {   u'Artist': u'Russ Ferriday',
-                      u'Copyright': u'Copyright: DDDDDDDDDDDDDDDDDD Ferriday',
-                      u'DateTime': u'2009:09:12 14:42:56',
-                      u'ExifOffset': u'288',
-                      u'GPSInfo': u'776',
-                      u'ImageDescription': u' ',
-                      u'Make': u'Canon',
-                      u'Model': u'Canon EOS REBEL T1i',
-                      u'Orientation': u'Horizontal (normal)',
-                      u'ResolutionUnit': u'Pixels/Inch',
-                      u'Software': u'iPhoto 9.4.3',
-                      u'XResolution': u'72',
-                      u'YResolution': u'72'}}
+            u'EXIF': {u'ApertureValue': u'53/8',
+                      u'ColorSpace': u'sRGB',
+                      u'ComponentsConfiguration': u'YCbCr',
+                      u'CustomRendered': u'Normal',
+                      u'DateTimeDigitized': u'2009:09:12 14:42:56',
+                      u'DateTimeOriginal': u'2009:09:12 14:42:56',
+                      u'ExifImageLength': u'320',
+                      u'ExifImageWidth': u'213',
+                      u'ExifVersion': u'0221',
+                      u'ExposureBiasValue': u'0',
+                      u'ExposureMode': u'Auto Exposure',
+                      u'ExposureProgram': u'Program Normal',
+                      u'ExposureTime': u'1/500',
+                      u'FNumber': u'10',
+                      u'Flash': u'Flash did not fire, compulsory flash mode',
+                      u'FlashPixVersion': u'0100',
+                      u'FocalLength': u'38',
+                      u'FocalPlaneResolutionUnit': u'2',
+                      u'FocalPlaneXResolution': u'207302/39',
+                      u'FocalPlaneYResolution': u'245747/46',
+                      u'ISOSpeedRatings': u'800',
+                      u'MaxApertureValue': u'3363/1189',
+                      u'MeteringMode': u'Spot',
+                      u'SceneCaptureType': u'Standard',
+                      u'ShutterSpeedValue': u'9',
+                      u'SubSecTime': u'11',
+                      u'SubSecTimeDigitized': u'11',
+                      u'SubSecTimeOriginal': u'11',
+                      u'UserComment': u' ',
+                      u'WhiteBalance': u'Auto'},
+            u'GPS': {u'GPSDate': u'2009:09:12',
+                     u'GPSLatitude': u'[35, 16, 4887/100]',
+                     u'GPSLatitudeRef': u'N',
+                     u'GPSLongitude': u'[120, 39, 2661/50]',
+                     u'GPSLongitudeRef': u'W',
+                     u'GPSTimeStamp': u'[21, 42, 56]',
+                     u'GPSVersionID': u'[2, 2, 0, 0]'},
+            u'Image': {u'Artist': u'Russ Ferriday',
+                       u'Copyright': u'Copyright: Russell Ferriday',
+                       u'DateTime': u'2009:09:12 14:42:56',
+                       u'ExifOffset': u'288',
+                       u'GPSInfo': u'776',
+                       u'ImageDescription': u' ',
+                       u'Make': u'Canon',
+                       u'Model': u'Canon EOS REBEL T1i',
+                       u'Orientation': u'Horizontal (normal)',
+                       u'ResolutionUnit': u'Pixels/Inch',
+                       u'Software': u'iPhoto 9.4.3',
+                       u'XResolution': u'72',
+                       u'YResolution': u'72'}}
 
 
         """
