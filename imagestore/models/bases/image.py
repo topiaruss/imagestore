@@ -86,20 +86,22 @@ class BaseImage(models.Model):
     def get_absolute_url(self):
         return 'imagestore:image', (), {'pk': self.id}
 
+    def __unicode__(self):
+        return '%s'% self.id
 
     def overrideable_date(self):
         """
         Get the exif date, but override if the photo_date is set
         """
         if self.photo_date:
-            return self.photo_data
+            return self.photo_date
         return self.raw_exif_datetime()
     overrideable_date.short_description = _('Raw Exif Datetime')
 
-    def __unicode__(self):
-        return '%s'% self.id
-
     def raw_exif_datetime(self):
+        """
+        Get the raw exif date, returning None if on a KeyError or parsing problem
+        """
         try:
             exifdate = self.exif['Image DateTime']
             dt = datetime.datetime.strptime(exifdate, '%Y:%m:%d %H:%M:%S')
@@ -117,17 +119,90 @@ class BaseImage(models.Model):
             return 'IOError logged'
         except ThumbnailError, ex:
             return 'ThumbnailError, %s' % ex.message
-
     admin_thumbnail.short_description = _('Thumbnail')
     admin_thumbnail.allow_tags = True
 
-    # def exifbyblock(self, block):
-    #     import pdb; pdb.set_trace()
-    #     block = [i for i in self.exif.items() if i[0].startswith(block)]
-    #     ret = {}
-    #     for k,v in block:
-    #         ret[k] = v
-    #     return ret
+    def pprint_object(self, obj):
+        """
+        Handy for documenting exif_by_block ret value
+        """
+        import pprint
+        pprint.PrettyPrinter(indent=4).pprint(obj)
+
+    def exif_by_block(self):
+        """
+        Splits the EXIF data into blocks, for easy access in templates:
+            {{ image.exif_by_block.GPS.GPSLatitude }}
+            {{ image.exif_by_block.EXIF.ApertureValue }}
+            {{ image.exif_by_block.Image.Copyright }}
+
+        Below is an example of the ret value, for a specific image::
+
+        {
+        u'EXIF': {   u'ApertureValue': u'53/8',
+                 u'ColorSpace': u'sRGB',
+                 u'ComponentsConfiguration': u'YCbCr',
+                 u'CustomRendered': u'Normal',
+                 u'DateTimeDigitized': u'2009:09:12 14:42:56',
+                 u'DateTimeOriginal': u'2009:09:12 14:42:56',
+                 u'ExifImageLength': u'320',
+                 u'ExifImageWidth': u'213',
+                 u'ExifVersion': u'0221',
+                 u'ExposureBiasValue': u'0',
+                 u'ExposureMode': u'Auto Exposure',
+                 u'ExposureProgram': u'Program Normal',
+                 u'ExposureTime': u'1/500',
+                 u'FNumber': u'10',
+                 u'Flash': u'Flash did not fire, compulsory flash mode',
+                 u'FlashPixVersion': u'0100',
+                 u'FocalLength': u'38',
+                 u'FocalPlaneResolutionUnit': u'2',
+                 u'FocalPlaneXResolution': u'207302/39',
+                 u'FocalPlaneYResolution': u'245747/46',
+                 u'ISOSpeedRatings': u'800',
+                 u'MaxApertureValue': u'3363/1189',
+                 u'MeteringMode': u'Spot',
+                 u'SceneCaptureType': u'Standard',
+                 u'ShutterSpeedValue': u'9',
+                 u'SubSecTime': u'11',
+                 u'SubSecTimeDigitized': u'11',
+                 u'SubSecTimeOriginal': u'11',
+                 u'UserComment': u' ',
+                 u'WhiteBalance': u'Auto'},
+        u'GPS': {   u'GPSDate': u'2009:09:12',
+                    u'GPSLatitude': u'[35, 16, 4887/100]',
+                    u'GPSLatitudeRef': u'N',
+                    u'GPSLongitude': u'[120, 39, 2661/50]',
+                    u'GPSLongitudeRef': u'W',
+                    u'GPSTimeStamp': u'[21, 42, 56]',
+                    u'GPSVersionID': u'[2, 2, 0, 0]'},
+        u'Image': {   u'Artist': u'Russ Ferriday',
+                      u'Copyright': u'Copyright: DDDDDDDDDDDDDDDDDD Ferriday',
+                      u'DateTime': u'2009:09:12 14:42:56',
+                      u'ExifOffset': u'288',
+                      u'GPSInfo': u'776',
+                      u'ImageDescription': u' ',
+                      u'Make': u'Canon',
+                      u'Model': u'Canon EOS REBEL T1i',
+                      u'Orientation': u'Horizontal (normal)',
+                      u'ResolutionUnit': u'Pixels/Inch',
+                      u'Software': u'iPhoto 9.4.3',
+                      u'XResolution': u'72',
+                      u'YResolution': u'72'}}
+
+
+        """
+        if self.exif is None:
+            return {}
+        if hasattr(self, '_cached_exif_by_block'):
+            return self._cached_exif_by_block
+        ret = {}
+        for k, v in self.exif.items():
+            block, key = k.split()
+            ret.setdefault(block, {})[key] = v
+        self._cached_exif_by_block = ret
+        # self.pprint_object(ret)  #  just for creating doc/exploring
+        return ret
 
 #noinspection PyUnusedLocal
 def setup_imagestore_permissions(instance, created, **kwargs):
