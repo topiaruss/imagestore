@@ -6,7 +6,7 @@ from django.utils.importlib import import_module
 __author__ = 'zeus'
 
 import exifread
-import os
+import logging
 import zipfile
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
@@ -22,13 +22,20 @@ except ImportError:
 
 from imagestore.models import Album, Image
 
+logger = logging.getLogger(__name__)
+
 TEMP_DIR = getattr(settings, 'TEMP_DIR', 'temp/')
 
+def timing(msg):
+    logger.debug(msg)
 
 def process_zipfile(uploaded_album):
+    timing("checking uploaded album exists")
     if default_storage.exists(uploaded_album.zip_file.name):
         # TODO: implement try-except here
+        timing("build the zipfile reference")
         zip = zipfile.ZipFile(uploaded_album.zip_file)
+        timing("test the zipfile")
         bad_file = zip.testzip()
         if bad_file:
             raise Exception('"%s" in the .zip archive is corrupt.' % bad_file)
@@ -40,30 +47,41 @@ def process_zipfile(uploaded_album):
         for filename in sorted(zip.namelist()):
             if filename.startswith('__'):  # do not process meta files
                 continue
-            print filename.encode('ascii', errors='replace')
+
+            fname = filename.encode('ascii', errors='replace')
+            timing('looping for %s' % fname)
+            print fname
+
+            timing('read the individual file')
             data = zip.read(filename)
             if len(data):
+                timing('determined it has content')
                 try:
                     # the following is taken from django.forms.fields.ImageField:
                     # load() could spot a truncated JPEG, but it loads the entire
                     # image in memory, which is a DoS vector. See #3848 and #18520.
                     # verify() must be called immediately after the constructor.
+                    timing('verifying')
                     PILImage.open(StringIO(data)).verify()
+                    timing('verified')
                 except Exception, ex:
                     # if a "bad" file is found we just skip it.
-                    print('Error verify image: %s' % ex.message)
+                    logger.error('Error while verifying image: %s' % ex.message)
                     continue
 
                 if hasattr(data, 'seek') and callable(data.seek):
-                    print 'seeked'
                     data.seek(0)
+                    timing('seeked start of file')
                 exif = exifread.process_file(StringIO(data))
+                timing('exif extraction done')
                 xif = {}
                 [xif.update({k:v.printable}) for k, v in exif.items()]
 
                 if hasattr(data, 'seek') and callable(data.seek):
                     print 'seeked'
                     data.seek(0)
+                    timing('seeked start of file, again')
+
                 try:
                     img = Image(album=uploaded_album.album,
                                 tags=uploaded_album._tags_cache,
@@ -75,11 +93,11 @@ def process_zipfile(uploaded_album):
                                 )
                     img.image.save(filename, ContentFile(data))
                     img.save()
-                    print img.raw_exif_datetime()
+                    timing('saved image')
                 except Exception, ex:
-                    #import pdb;pdb.set_trace()
-                    print('error create Image: %s' % ex.message)
+                    logger.error('error creating Image: %s' % ex.message)
         zip.close()
+        timing('closed zip file')
         uploaded_album.delete()
 
 
@@ -150,7 +168,9 @@ class AlbumUpload(models.Model):
         app_label = 'imagestore'
 
     def save(self, *args, **kwargs):
+        timing('uploading via superclass')
         super(AlbumUpload, self).save(*args, **kwargs)
+        timing('invoking upload_processor')
         upload_processor(self)
 
     def delete(self, *args, **kwargs):
