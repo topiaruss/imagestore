@@ -138,7 +138,7 @@ class BaseImage(models.Model):
             exifdate = self.exif['Image DateTime']
             dt = datetime.datetime.strptime(exifdate, '%Y:%m:%d %H:%M:%S')
             if timezone.is_naive(dt):
-                dt = timezone.make_aware(timezone.get_current_timezone())
+                dt = timezone.make_aware(dt, timezone.get_current_timezone())
             return dt
         except Exception, ex:
             logger.exception("raw_exif_datetime")
