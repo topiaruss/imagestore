@@ -229,8 +229,11 @@ class BaseImage(models.Model):
             return self._cached_exif_by_block
         ret = {}
         for k, v in self.exif.items():
-            block, key = k.split()
-            ret.setdefault(block, {})[key] = v
+            try:
+                block, key = k.split()
+                ret.setdefault(block, {})[key] = v
+            except Exception, ex:
+                logger.exception("in exif_by_block k is %s, msg is %s" % (k, ex.message))
         self._cached_exif_by_block = ret
         # self.pprint_object(ret)  #  just for creating doc/exploring
         return ret

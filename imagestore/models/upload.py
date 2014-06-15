@@ -30,6 +30,18 @@ def timing(msg):
     logger.debug(msg)
 
 def process_zipfile(uploaded_album):
+
+    def flatten_exif(exif):
+        xif = {}
+        for k, v in exif.items():
+            try:
+                if k == 'JPEGThumbnail':
+                    continue
+                xif.update({k:v.printable})
+            except AttributeError, ex:
+                logger.exception('%s in k, v: %s :: %s' % (ex, k, v))
+        return xif
+
     timing("checking uploaded album exists")
     if default_storage.exists(uploaded_album.zip_file.name):
         # TODO: implement try-except here
@@ -74,9 +86,7 @@ def process_zipfile(uploaded_album):
                     timing('seeked start of file')
                 exif = exifread.process_file(StringIO(data))
                 timing('exif extraction done')
-                xif = {}
-                [xif.update({k:v.printable}) for k, v in exif.items()]
-
+                xif = flatten_exif(exif)
                 if hasattr(data, 'seek') and callable(data.seek):
                     print 'seeked'
                     data.seek(0)
