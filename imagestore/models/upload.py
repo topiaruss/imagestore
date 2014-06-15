@@ -13,6 +13,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 from django.core.files.base import ContentFile
 from tagging_autocomplete.models import TagAutocompleteField
+from django.core.files.storage import default_storage
 
 try:
     import Image as PILImage
@@ -25,9 +26,9 @@ TEMP_DIR = getattr(settings, 'TEMP_DIR', 'temp/')
 
 
 def process_zipfile(uploaded_album):
-    if os.path.isfile(uploaded_album.zip_file.path):
+    if default_storage.exists(uploaded_album.zip_file.name):
         # TODO: implement try-except here
-        zip = zipfile.ZipFile(uploaded_album.zip_file.path)
+        zip = zipfile.ZipFile(uploaded_album.zip_file)
         bad_file = zip.testzip()
         if bad_file:
             raise Exception('"%s" in the .zip archive is corrupt.' % bad_file)
@@ -153,6 +154,6 @@ class AlbumUpload(models.Model):
         upload_processor(self)
 
     def delete(self, *args, **kwargs):
-        storage, path = self.zip_file.storage, self.zip_file.path
+        storage, path = self.zip_file.storage, self.zip_file.name
         super(AlbumUpload, self).delete(*args, **kwargs)
         storage.delete(path)
