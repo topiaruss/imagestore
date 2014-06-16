@@ -162,7 +162,7 @@ class AlbumUpload(models.Model):
         verbose_name=_("Image description"),
         help_text=_('Will be added to each uploaded image')
         )
-    photo_date = models.DateField(
+    photo_date = models.DateTimeField(
         blank=True,
         null=True,
         verbose_name=_("Date override"),

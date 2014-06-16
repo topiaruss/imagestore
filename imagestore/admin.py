@@ -25,12 +25,14 @@ admin.site.register(Album, AlbumAdmin)
 class ImageAdmin(admin.ModelAdmin):
     fieldsets = (
         (None,
-         {'fields': ['title', 'image',
-                     'photographers_name','event_name', 'photo_date', 'tags', 'album', 'description',
+         {'fields': ['title', 'image', 'video_url',
+                     'photographers_name','event_name',
+                     'photo_date', 'tags', 'album', 'description',
                      'exif',]}
         ),
     )
-    list_display = ('admin_thumbnail', 'album', 'title', 'raw_exif_datetime', 'photo_date', 'tags', 'photographers_name', 'event_name')
+    list_display = ('admin_thumbnail', 'album', 'title', 'event_name', 'tags', 'photographers_name',
+                    'raw_exif_datetime', 'photo_date',  'video_url')
     raw_id_fields = ('user', )
     list_filter = ('album', 'photographers_name', 'event_name')
 
