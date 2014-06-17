@@ -10,15 +10,24 @@ from models import *
 import os
 from django.contrib.auth.models import User
 from django.db import models
+from django.core.files.storage import default_storage
+
 
 try:
     from lxml import html
 except:
     raise ImportError('Imagestore require lxml for self-testing')
 
+
 class ImagestoreTest(TestCase):
     def setUp(self):
-        self.image_file = open(os.path.join(os.path.dirname(__file__), 'test_img.jpg'))
+
+        # copy the local image onto the default storage
+        TEST_IMAGE_NAME = 'test_img.jpg'
+        local_file = open(os.path.join(os.path.dirname(__file__), TEST_IMAGE_NAME))
+        default_storage.save(TEST_IMAGE_NAME, local_file)
+        self.image_file = default_storage.open(TEST_IMAGE_NAME)
+
         self.user = User.objects.create_user('zeus', 'zeus@example.com', 'zeus')
         self.client = Client()
         self.album = Album(name='test album', user=self.user)
