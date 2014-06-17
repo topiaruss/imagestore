@@ -5,7 +5,6 @@ from django.utils.importlib import import_module
 
 __author__ = 'zeus'
 
-import exifread
 import logging
 import zipfile
 from django.db import models
@@ -30,17 +29,6 @@ def timing(msg):
     logger.debug(msg)
 
 def process_zipfile(uploaded_album):
-
-    def flatten_exif(exif):
-        xif = {}
-        for k, v in exif.items():
-            try:
-                if k == 'JPEGThumbnail':
-                    continue
-                xif.update({k:v.printable})
-            except AttributeError, ex:
-                logger.exception('%s in k, v: %s :: %s' % (ex, k, v))
-        return xif
 
     timing("checking uploaded album exists")
     if default_storage.exists(uploaded_album.zip_file.name):
@@ -84,9 +72,7 @@ def process_zipfile(uploaded_album):
                 if hasattr(data, 'seek') and callable(data.seek):
                     data.seek(0)
                     timing('seeked start of file')
-                exif = exifread.process_file(StringIO(data))
-                timing('exif extraction done')
-                xif = flatten_exif(exif)
+
                 if hasattr(data, 'seek') and callable(data.seek):
                     print 'seeked'
                     data.seek(0)
@@ -99,10 +85,9 @@ def process_zipfile(uploaded_album):
                                 photographers_name=uploaded_album.photographers_name,
                                 photo_date=uploaded_album.photo_date,
                                 description=uploaded_album.image_description,
-                                exif=xif,
                                 )
                     img.image.save(filename, ContentFile(data))
-                    img.save()
+                    #img.save()
                     timing('saved image')
                 except Exception, ex:
                     logger.error('error creating Image: %s' % ex.message)

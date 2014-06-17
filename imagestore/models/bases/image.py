@@ -5,6 +5,7 @@ __author__ = 'zeus'
 
 import datetime
 import logging
+import exifread
 
 from django.db import models
 from django.db.models import permalink
@@ -113,6 +114,27 @@ class BaseImage(models.Model):
         null=True, blank=True,
         help_text=_(
             "This EXIF data was extracted and stored when the image was uploaded. Best not to edit it."))
+
+    def save(self, *args, **kwargs):
+        """
+        override save so that we can grab the exif data on the image.
+        TODO: optimise so that we only fetch exif data when the image is first saved, or updated.
+        """
+        def flatten_exif(exif):
+            xif = {}
+            for k, v in exif.items():
+                try:
+                    if k == 'JPEGThumbnail':
+                        continue
+                    xif.update({k:v.printable})
+                except AttributeError, ex:
+                    logger.exception('%s in k, v: %s :: %s' % (ex, k, v))
+            return xif
+        ff = self.image.storage.open(self.image.name)
+        exif = exifread.process_file(ff)
+        xif = flatten_exif(exif)
+        self.exif=xif
+        super(BaseImage, self).save(*args, **kwargs)
 
     @permalink
     def get_absolute_url(self):
