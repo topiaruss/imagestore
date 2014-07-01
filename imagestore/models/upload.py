@@ -64,9 +64,9 @@ def process_zipfile(uploaded_album):
                     timing('verifying')
                     PILImage.open(StringIO(data)).verify()
                     timing('verified')
-                except Exception, ex:
+                except Exception:
                     # if a "bad" file is found we just skip it.
-                    logger.error('Error while verifying image: %s' % ex.message)
+                    logger.exception('Error while verifying image: %s' % filename)
                     continue
 
                 if hasattr(data, 'seek') and callable(data.seek):
@@ -89,8 +89,8 @@ def process_zipfile(uploaded_album):
                     img.image.save(filename, ContentFile(data))
                     #img.save()
                     timing('saved image')
-                except Exception, ex:
-                    logger.error('error creating Image: %s' % ex.message)
+                except Exception:
+                    logger.exception('error creating Image: %s' % filename)
         zip.close()
         timing('closed zip file')
         uploaded_album.delete()
