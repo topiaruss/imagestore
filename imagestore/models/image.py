@@ -7,13 +7,15 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 from bases.image import BaseImage
+from thumbnail.models import AsyncThumbnailMixin
 
 
-class Image(BaseImage):
+class Image(AsyncThumbnailMixin, BaseImage):
     """
     An image for the gallery, with special front-end behaviour when the video URL is populated.
 
     """
+    image_field_name = 'image'
 
     class Meta(BaseImage.Meta):
         abstract = False
