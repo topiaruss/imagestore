@@ -132,6 +132,8 @@ class BaseImage(models.Model):
             return xif
         try:
             ff = self.image._file
+            if ff is None:
+                ff = self.image.storage.open(self.image.name)
             exif = exifread.process_file(ff)
             xif = flatten_exif(exif)
             self.exif=xif
