@@ -130,10 +130,14 @@ class BaseImage(models.Model):
                 except AttributeError, ex:
                     logger.exception('%s in k, v: %s :: %s' % (ex, k, v))
             return xif
-        ff = self.image.storage.open(self.image.name)
-        exif = exifread.process_file(ff)
-        xif = flatten_exif(exif)
-        self.exif=xif
+        try:
+            ff = self.image._file
+            exif = exifread.process_file(ff)
+            xif = flatten_exif(exif)
+            self.exif=xif
+        except Exception:
+            logger.exception('exif processing error on : %s' % self.image.name)
+
         super(BaseImage, self).save(*args, **kwargs)
 
     @permalink
