@@ -173,22 +173,8 @@ class BaseImage(models.Model):
         """
         if self.photographers_name:
             return self.photographers_name
-
-        try:
-            artist = self.exif_by_block()['Image']['Artist']
-            if artist:
-                return artist
-        except KeyError:
-            pass
-
-        try:
-            copyright = self.exif_by_block()['Image']['Copyright']
-            if copyright:
-                return copyright
-        except KeyError:
-            pass
-
-        return ''
+        artist = self.safe_exif_by_block('Image', 'Artist')
+        return artist if artist else self.safe_exif_by_block('Image', 'Copyright')
 
     def raw_exif_datetime(self):
         """
@@ -200,8 +186,8 @@ class BaseImage(models.Model):
             if timezone.is_naive(dt):
                 dt = timezone.make_aware(dt, timezone.get_current_timezone())
             return dt
-        except Exception, ex:
-            logger.exception("handled exception in raw_exif_datetime. No sweat.")
+        except Exception:
+            logger.debug("handled exception in raw_exif_datetime. No sweat. Image pk %s" % self)
             return None
 
     raw_exif_datetime.short_description = _('Raw Exif Datetime')
@@ -212,7 +198,7 @@ class BaseImage(models.Model):
         except IOError:
             logger.exception('IOError for image %s', self.image)
             return 'IOError logged'
-        except ThumbnailError, ex:
+        except ThumbnailError as ex:
             return 'ThumbnailError, %s' % ex.message
 
     admin_thumbnail.short_description = _('Thumbnail')
@@ -225,12 +211,24 @@ class BaseImage(models.Model):
         import pprint
         pprint.PrettyPrinter(indent=4).pprint(obj)
 
+    def safe_exif_by_block(self, block, key):
+        """get exif section or value, returning {} or '' respectively if any of the requested structure is missing"""
+        data = self.exif_by_block()
+        try:
+            section = data[block]
+            return section if not key else section[key]
+        except KeyError:
+            logger.info('missing exif block or key in %s, "%s", "%s"' % (self, block, key))
+        return '' if key else {}
+
     def exif_by_block(self):
         """
         Splits the EXIF data into blocks, for easy access in templates:
             {{ image.exif_by_block.GPS.GPSLatitude }}
             {{ image.exif_by_block.EXIF.ApertureValue }}
             {{ image.exif_by_block.Image.Copyright }}
+
+        Beware of the potential for KeyError on return value. Use safe_exif_by_block?
 
         Below is an example of the ret value, for a specific image::
 
