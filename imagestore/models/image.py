@@ -37,7 +37,8 @@ class Image(BaseImage):
 
     @staticmethod
     def is_video_url_legal(url):
-         return url.startswith('https://www.youtube.com')
+        url = url.replace('https://', 'http://')
+        return url.startswith('http://www.youtube.com')
 
     @staticmethod
     def extract_video_token(url):
