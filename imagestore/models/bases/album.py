@@ -69,7 +69,8 @@ class BaseAlbum(models.Model):
         img = self.get_head()
         if img:
             try:
-                return '<img src="%s">' % get_thumbnail(img.image, '100x100', crop='center').url
+                return '<img src="%s">' % get_thumbnail(img.image, settings.IMAGESTORE_ADMIN_ALL_IMAGES_THUMBNAIL,
+                                                        crop='center').url
             except IOError:
                 logger.exception('IOError for album %s', img.image)
                 return 'IOError'
