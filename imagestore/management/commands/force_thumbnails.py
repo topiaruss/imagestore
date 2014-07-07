@@ -7,7 +7,8 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-ALLOTTED_TIME = 60 * 60 # 1 hour
+ALLOTTED_TIME = 60 * 60 # meaning 1 hour
+REST_TIME = 15 # seconds
 
 class Command(BaseCommand):
     args = '<thumbspec thumbspec ...>'
@@ -63,7 +64,7 @@ class Command(BaseCommand):
                     self.total_thumbs += 1
                 self.stdout.write('')
                 imagetime = time.time() - start_image
-                self.stdout.write('image time: %.2f' % imagetime)
+                self.stdout.write('image time: %.2f // %s' % (imagetime, accu))
                 self.stdout.write('')
                 self.log('image time: %.2f // %s' % (imagetime, accu))
                 self.total_processed += 1
@@ -73,14 +74,20 @@ class Command(BaseCommand):
         while 1:
             images = Image.objects.all().order_by('-pk')
             current_top = images[:1].get().pk
+            worked = False
             while images.count() and high_water_mark != current_top:
+                worked = True
                 self.images_to_check = images.count()
                 process_images(images)
                 high_water_mark = current_top
                 # see if more images have come in
                 images = Image.objects.all().order_by('-pk')
                 current_top = images[:1].get().pk
-            time.sleep(60)
+            if worked:
+                worked = False
+                self.stdout.write('Cleared the backlog. Will continue to look for more work each %s seconds' % REST_TIME)
+                self.log('Cleared the backlog. Will continue to look for more work each %s seconds' % REST_TIME)
+            time.sleep(REST_TIME)
             slice()
 
 
