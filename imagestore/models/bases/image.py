@@ -181,7 +181,7 @@ class BaseImage(models.Model):
         Get the raw EXIF date with TZ, returning None if on a KeyError or parsing problem
         """
         try:
-            exifdate = self.exif['Image DateTime']
+            exifdate = self.exif['EXIF DateTimeOriginal']
             dt = datetime.datetime.strptime(exifdate, '%Y:%m:%d %H:%M:%S')
             if timezone.is_naive(dt):
                 dt = timezone.make_aware(dt, timezone.get_current_timezone())
