@@ -293,9 +293,9 @@ class BaseImage(models.Model):
         ret = {}
         for k, v in self.exif.items():
             try:
-                block, key = k.split()
+                block, key = k.split(None, 1) # keys of the form 'Image Tag 0xC635' occur
                 ret.setdefault(block, {})[key] = v
-            except Exception, ex:
+            except Exception as ex:
                 logger.exception("in exif_by_block k is %s, msg is %s" % (k, ex.message))
         self._cached_exif_by_block = ret
         # self.pprint_object(ret)  #  just for creating doc/exploring
