@@ -80,7 +80,7 @@ def process_zipfile(uploaded_album):
 
                 try:
                     img = Image(album=uploaded_album.album,
-                                #tags=uploaded_album._tags_cache,
+                                tags=uploaded_album._tags_cache,
                                 event_name=uploaded_album.event_name,
                                 photographers_name=uploaded_album.photographers_name,
                                 photo_date=uploaded_album.photo_date,

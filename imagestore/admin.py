@@ -7,7 +7,7 @@ class InlineImageAdmin(AdminInlineImageMixin, admin.TabularInline):
     model = Image
     fieldsets = (
         (None,
-         {'fields': ['title', 'image', 'photographers_name','event_name', 'photo_date', 'tags', 'album',]}
+         {'fields': ['title', 'image', 'photographers_name','event_name', 'photo_date', 'tags', 'album', 'video_url', 'exif']}
         ),
     )
     raw_id_fields = ('user', )
