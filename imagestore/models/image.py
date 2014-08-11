@@ -69,5 +69,5 @@ class Image(BaseImage):
             logger.error('Image %s gives problem extracting vid token %s' % (self.pk, self.video_url))
             return u''
 
-        template = """<iframe width="480" height="360" src="//www.youtube-nocookie.com/embed/{token}?rel=0" frameborder="0" allowfullscreen></iframe>"""
+        template = """<iframe id="player" type="text/html" src="//www.youtube-nocookie.com/embed/{token}?rel=0&enablejsapi=1&origin=http://nikonlife.eu" frameborder="0" allowfullscreen></iframe>"""
         return template.format(token=token)
